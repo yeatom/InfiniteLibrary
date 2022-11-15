@@ -1,257 +1,252 @@
 package com.yeatom.infinitelibrary
 
+import android.animation.*
 import android.content.Context
-import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.util.DisplayMetrics
+import android.util.Property
+import android.view.Gravity
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
+import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.Space
-import androidx.appcompat.widget.LinearLayoutCompat
-import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
-import com.google.android.material.imageview.ShapeableImageView
-import com.google.android.material.shape.RelativeCornerSize
-import com.google.android.material.shape.RoundedCornerTreatment
-import com.google.android.material.shape.ShapeAppearanceModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import androidx.constraintlayout.utils.widget.ImageFilterView
+import com.facebook.drawee.generic.RoundingParams
+import com.facebook.drawee.view.SimpleDraweeView
 import kotlin.math.roundToInt
-
-/**
- * @author yeatom 9/27/2022
- */
 
 class InfiniteLibrary @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
-) : LinearLayoutCompat(context, attrs) {
+) : FrameLayout(context, attrs) {
 
-    fun display(urlList: List<String>) {
-        visibility = INVISIBLE
-        urls = urlList
-
-        removeAllViews()
-        initChildren()
-        resetState()
-
-        preloadForDisplay()
-        autoScroll()
-    }
-
-    private lateinit var views: List<ImageView>
-    private lateinit var urls: List<String>
+    private var views: List<ImageView> = listOf()
+    private var urls: List<String> = listOf()
 
     private var diameter = 50.dpToPx
     private var radius = 25.dpToPx
 
+    private var visibleNum: Int = 3
     private val overlapRatio: Float
-    private val visibleNum: Int
-
-    private var currentHead = 0
-    private var currentTail = 0
-    private var currentUrl = 0
-
-    //create ImageViews
-    private fun initChildren() {
-        val spaceForDisappear = (diameter * (1 - overlapRatio)).roundToInt()
-        addView(Space(context), LayoutParams(spaceForDisappear, diameter))
-
-        views = List(visibleNum + 1) { index ->
-            ShapeableImageView(context).apply {
-                //border
-                strokeWidth = diameter / 25f
-                strokeColor = ColorStateList(
-                    arrayOf(intArrayOf(android.R.attr.state_enabled)),
-                    intArrayOf(Color.WHITE)
-                )
-                val paddingOffset = (strokeWidth / 2).roundToInt()
-                setPadding(paddingOffset, paddingOffset, paddingOffset, paddingOffset)
-
-                //shape
-                shapeAppearanceModel = ShapeAppearanceModel().toBuilder()
-                    .setAllCorners(RoundedCornerTreatment())
-                    .setAllCornerSizes(RelativeCornerSize(0.5f))
-                    .build()
-
-                addView(this, childCount, LayoutParams(diameter, diameter).apply {
-                    if (index != visibleNum)
-                        marginEnd = (-diameter * overlapRatio).roundToInt()
-                })
-            }
-        }
-    }
-
-    //make some items visible first
-    private fun preloadForDisplay() {
-        MainScope().launch {
-            urls.take(visibleNum + 1).zip(views).forEachIndexed { index, pair ->
-                val view = pair.second
-                val url = pair.first
-
-                if (index == visibleNum) {
-                    view.alpha = 0f
-                }
-                view loadImage url
-            }
-        }
-        visibility = VISIBLE
-    }
-
-    //translate views to the left and load next image
-    private fun moveViews() {
-        views.forEachIndexed { index, view ->
-
-            view.run {
-                val animate = animate()
-                if (index == currentHead) {
-                    animate.alpha(0f)
-                        .withEndAction {
-                            view loadImage urls[currentUrl]
-                            translationX += width * (1 - overlapRatio) * (visibleNum + 1)
-                        }
-                }
-                if (index == currentTail) {
-                    animate.alpha(1f)
-                }
-
-                val offsetX = width * (overlapRatio - 1) + translationX
-                val offsetZ =
-                    if (index - currentHead >= 0) index - currentHead
-                    else views.size - currentHead + index
-
-                z = offsetZ.toFloat()
-
-                animate
-                    .setDuration(1000)
-                    .translationX(offsetX)
-                    .start()
-            }
-        }
-
-
-        if (++currentHead == views.size) {
-            currentHead = 0
-        }
-
-        if (++currentTail == views.size) {
-            currentTail = 0
-        }
-
-        if (++currentUrl == urls.size) {
-            currentUrl = 0
-        }
-    }
 
     init {
-        orientation = HORIZONTAL
-
-        val height = attrs?.getAttributeValue("android", "layout_height")
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.InfiniteLibrary)
-
-        if (!height.equals(WRAP_CONTENT.toString()) &&
-            !height.equals(MATCH_PARENT.toString())) {
-
-            context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.layout_height)).run {
-                diameter = getDimensionPixelOffset(0, 50.dpToPx)
-                radius = diameter / 2
-                recycle()
-            }
-        }
 
         visibleNum = typedArray.getInt(R.styleable.InfiniteLibrary_visibleNum, 3)
         overlapRatio = typedArray.getFloat(R.styleable.InfiniteLibrary_overlapRatio, 0.4f)
 
-        typedArray.recycle()
-        resetState()
         preview()
+        typedArray.recycle()
     }
 
-    //only for ide preview
+    fun exhibit(urls: List<String>?) {
+        urls?.run {
+            if (size < visibleNum) {
+                visibleNum = size
+            }
+            initChildViews()
+
+            take(visibleNum).zip(views).forEachIndexed { index, pair ->
+                val view = pair.second as SimpleDraweeView
+                val url = pair.first
+
+                view loadImage url
+            }
+        }
+    }
+
+    private val loopRunnable = object : Runnable {
+        val animators = arrayListOf<Animator>()
+
+        val interpolator = AccelerateDecelerateInterpolator()
+        val property = object : Property<View, Float>(Float::class.java, "translationX") {
+            override fun get(`object`: View): Float {
+                return `object`.translationX
+            }
+
+            override fun set(`object`: View, value: Float) {
+                `object`.translationX = value
+            }
+        }
+
+        override fun run() {
+            views.forEachIndexed { index, view ->
+                addTranslateAnimator(index, view)
+                addFadeAnimator(index, view)
+            }
+
+            AnimatorSet().apply {
+                playTogether(animators)
+                duration = 4000
+                start()
+            }
+        }
+
+        private fun addFadeAnimator(index: Int, view: ImageView) {
+            val size: Float = views.size * 1f
+
+            val fadeValues =
+                if (index != views.size - 1)
+                    PropertyValuesHolder.ofKeyframe(
+                        ALPHA,
+                        Keyframe.ofFloat(0f, 1f),
+                        Keyframe.ofFloat(index / size, 1f),
+                        Keyframe.ofFloat((index + 1f) / size, 0f),
+                        Keyframe.ofFloat((index + 2f) / size, 1f),
+                        Keyframe.ofFloat(1f, 1f),
+                    )
+                else
+                    PropertyValuesHolder.ofKeyframe(
+                        ALPHA,
+                        Keyframe.ofFloat(0f, 0f),
+                        Keyframe.ofFloat(1f / size, 1f),
+                        Keyframe.ofFloat(index / size, 1f),
+                        Keyframe.ofFloat(1f, 0f),
+                    )
+
+            val overlayValues =
+                PropertyValuesHolder.ofKeyframe(
+                    TRANSLATION_Z,
+                    Keyframe.ofFloat(0f, (index + 1f) / size),
+                    Keyframe.ofFloat((index + 1f) / size, 0f),
+                    Keyframe.ofFloat(((index + 1f) / size) + 0.001f, 1f),
+                    Keyframe.ofFloat(1f, (index + 1f) / size),
+                )
+
+            val fade =
+                ObjectAnimator.ofPropertyValuesHolder(view, fadeValues, overlayValues).apply {
+                    interpolator = LinearInterpolator()
+                    repeatCount = ObjectAnimator.INFINITE
+                }
+            animators.add(fade)
+        }
+
+        private fun addTranslateAnimator(index: Int, view: ImageView) {
+            val offset = (index + 1) * diameter * (1 - overlapRatio)
+
+            val evaluator = object : TypeEvaluator<Float> {
+                override fun evaluate(
+                    fraction: Float,
+                    startValue: Float?,
+                    endValue: Float?
+                ): Float {
+                    val process = (fraction * views.size) % 1
+                    val moved = (fraction * views.size).toInt()
+
+                    val segmentDistance = diameter * (overlapRatio - 1)
+                    val wholeDistance = (views.size) * diameter * (overlapRatio - 1)
+                    val currentPoint = (wholeDistance / views.size) * moved +
+                            interpolator.getInterpolation(process) * segmentDistance
+
+                    if (currentPoint + offset <= 0) {
+                        return currentPoint - wholeDistance
+                    }
+                    return currentPoint
+                }
+            }
+
+            val translateX = ObjectAnimator.ofObject(view, property, evaluator, 0f, 0f)
+                .apply {
+                    interpolator = LinearInterpolator()
+                    repeatCount = ObjectAnimator.INFINITE
+                }
+            animators.add(translateX)
+        }
+    }
+
+    fun loop(urls: List<String>) {
+        if (urls.size <= visibleNum || visibleNum <= 2) {
+            exhibit(urls)
+            return
+        }
+
+        urls.run {
+            initChildViews(isStartOffset = true, isEndOffset = true)
+
+            take(visibleNum + 1).zip(views).forEachIndexed { index, pair ->
+                val url = pair.first
+                val view = pair.second as SimpleDraweeView
+
+                view loadImage url
+            }
+        }
+
+        this.urls = urls
+        removeCallbacks(loopRunnable)
+        postDelayed(loopRunnable, 1000)
+    }
+
     private fun preview() {
-        initChildren()
-        val drawable = ContextCompat.getDrawable(context, R.mipmap.gengar)
+        initChildViews(true)
+
         views.forEachIndexed { index, view ->
             if (index == visibleNum) {
                 view.alpha = 0f
             }
-            view.setImageDrawable(drawable)
+            view as ImageFilterView loadImage drawableId
         }
     }
 
-    private fun resetState() {
-        currentHead = 0
-        currentTail = visibleNum
-        currentUrl = visibleNum
-    }
+    private fun initChildViews(
+        isPreview: Boolean = false,
+        isStartOffset: Boolean = false,
+        isEndOffset: Boolean = false,
+    ) {
+        removeAllViews()
 
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        layoutParams?.run {
-            width = WRAP_CONTENT
-        }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-    }
+        val offset = if (!isStartOffset) 0 else (diameter * (1 - overlapRatio)).roundToInt()
+        val viewsNum = if (isEndOffset) visibleNum + 1 else visibleNum
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        executor.shutdown()
-        executor = Executors.newSingleThreadScheduledExecutor()
-    }
+        views = List(viewsNum) { index ->
+            val imageView =
+                if (isPreview)
+                    ImageFilterView(context).apply {
+                        roundPercent = 1f
+                    }
+                else SimpleDraweeView(context).apply {
+                    hierarchy.roundingParams =
+                        RoundingParams.fromCornersRadius(radius.toFloat()).apply {
+                            borderColor = Color.WHITE
+                            roundAsCircle = true
+                            borderWidth = 1f.dpToPx
+                        }
+                }
 
-    private fun autoScroll() {
-        executor.scheduleAtFixedRate({
-            MainScope().launch(Dispatchers.Main) {
-                moveViews()
+            val layoutParams = LayoutParams(diameter, diameter).apply {
+                marginStart = offset + (diameter * (1 - overlapRatio) * index).roundToInt()
+                gravity = Gravity.CENTER_VERTICAL or Gravity.START
             }
-        }, 3000, 3000, TimeUnit.MILLISECONDS)
+
+            imageView.apply {
+                addView(this, childCount, layoutParams)
+
+                if (index == visibleNum) {
+                    alpha = 0f
+                }
+            }
+        }
+    }
+
+    private infix fun SimpleDraweeView.loadImage(url: String) {
+        setImageURI(url)
+    }
+
+    private infix fun ImageFilterView.loadImage(id: Int) {
+        setImageResource(id)
     }
 
     companion object {
-        private infix fun ImageView.loadImage(url: String) {
-            visibility = INVISIBLE
+        private const val drawableId = R.mipmap.gengar
 
-            val callback = object : RequestListener<Drawable?> {
-                override fun onLoadFailed(
-                    e: GlideException?,
-                    model: Any?,
-                    target: Target<Drawable?>?,
-                    isFirstResource: Boolean,
-                ): Boolean {
-                    return true
-                }
+        inline val displayMetrics: DisplayMetrics
+            get() = Resources.getSystem().displayMetrics
 
-                override fun onResourceReady(
-                    resource: Drawable?,
-                    model: Any?,
-                    target: Target<Drawable?>?,
-                    dataSource: DataSource?,
-                    isFirstResource: Boolean,
-                ): Boolean {
-                    setImageDrawable(resource)
-                    visibility = VISIBLE
-                    return true
-                }
-            }
+        inline val Int.dpToPx: Int
+            get() = (this * displayMetrics.density).toInt()
 
-            Glide.with(this)
-                .load(url)
-                .centerCrop()
-                .addListener(callback)
-                .into(this)
-        }
-
-        private val Int.dpToPx: Int
-            get() = (this * Resources.getSystem().displayMetrics.density).toInt()
-
-        private var executor = Executors.newSingleThreadScheduledExecutor()
+        inline val Float.dpToPx: Float
+            get() = this * displayMetrics.density
     }
 }

@@ -2,20 +2,23 @@ package com.yeatom.infinitelibrary
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.facebook.drawee.backends.pipeline.Fresco
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val urls = listOf(
-            "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimg.shuicaimi.com%2Fc2021%2F09%2F07%2F5qabtvf5wf0.jpg&refer=http%3A%2F%2Fimg.shuicaimi.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1665867033&t=af7cd3a1435a60a2a461daf9747fa42d",
-            "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fhbimg.b0.upaiyun.com%2F0a81d2b8b5af38dcb1215ed7385cc416309a04ae39375-jGTWF8_fw658&refer=http%3A%2F%2Fhbimg.b0.upaiyun.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1665867089&t=2269aa8afa0961c4de52cd48cf5f9e6e",
-            "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fitem%2F201807%2F10%2F20180710171842_bqxxs.jpg&refer=http%3A%2F%2Fb-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1665867121&t=52922b01e9d073f33cfc02d0e52ed09b",
-            "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Finews.gtimg.com%2Fnewsapp_bt%2F0%2F13611980053%2F1000&refer=http%3A%2F%2Finews.gtimg.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1666891670&t=cd29695a557cf16f4ffeb2effc28070a",
-            "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fi0.hdslb.com%2Fbfs%2Farticle%2Fd12f7bd789e692aa5772ac938f9aa906ce495f74.jpg&refer=http%3A%2F%2Fi0.hdslb.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1666891727&t=509a5140b0ed47d829dd23a762b9c8ca",
-        )
+        Fresco.initialize(this)
 
-        findViewById<InfiniteLibrary>(R.id.infinite_library).display(urls)
+        setContentView(R.layout.activity_main)
+        findViewById<InfiniteLibrary>(R.id.infiniteLibrary).loop(
+            listOf(
+                "https://img1.baidu.com/it/u=3953506535,1844632112&fm=253&fmt=auto&app=138&f=JPEG?w=600&h=240",
+                "https://pics5.baidu.com/feed/0bd162d9f2d3572c057f85c7c3eafd2263d0c30e.jpeg?token=15720a6eec4ed4f401fb1f044c3a6d97&s=03E25723583233A518388B9C0300C0A1",
+                "https://img2.baidu.com/it/u=1194202626,1107644830&fm=253&fmt=auto&app=138&f=JPEG?w=506&h=338",
+                "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimg.mp.sohu.com%2Fupload%2F20170617%2F9c42d371b25d4145afb1808042e6a5cb_th.png&refer=http%3A%2F%2Fimg.mp.sohu.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671034264&t=453695a1cb65a267e7c1c93551a8ecbd",
+            )
+        )
     }
 }

@@ -7,15 +7,12 @@
     tools:context=".MainActivity">
 
     <com.yeatom.infinitelibrary.InfiniteLibrary
-        android:id="@+id/infinite_library"
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:id="@+id/infiniteLibrary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:overlapRatio="0.25"
-        app:visibleNum="3"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
