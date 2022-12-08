@@ -9,6 +9,8 @@ import android.util.DisplayMetrics
 import android.util.Property
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
@@ -36,6 +38,18 @@ class InfiniteLibrary @JvmOverloads constructor(
 
         visibleNum = typedArray.getInt(R.styleable.InfiniteLibrary_visibleNum, 3)
         overlapRatio = typedArray.getFloat(R.styleable.InfiniteLibrary_overlapRatio, 0.4f)
+
+        val height = attrs?.getAttributeValue("android", "layout_height")
+
+        if (!height.equals(WRAP_CONTENT.toString()) &&
+            !height.equals(MATCH_PARENT.toString())) {
+            context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.layout_height)).run {
+                diameter = getDimensionPixelOffset(0, 50.dpToPx)
+                radius = diameter / 2
+
+                recycle()
+            }
+        }
 
         preview()
         typedArray.recycle()
