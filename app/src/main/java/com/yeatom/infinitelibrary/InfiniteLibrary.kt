@@ -56,6 +56,7 @@ class InfiniteLibrary @JvmOverloads constructor(
     }
 
     fun exhibit(urls: List<String>?) {
+        removeCallbacks(loopRunnable)
         urls?.run {
             if (size < visibleNum) {
                 visibleNum = size
@@ -176,6 +177,7 @@ class InfiniteLibrary @JvmOverloads constructor(
             return
         }
 
+        removeCallbacks(loopRunnable)
         urls.run {
             initChildViews(isStartOffset = true, isEndOffset = true)
 
@@ -188,7 +190,6 @@ class InfiniteLibrary @JvmOverloads constructor(
         }
 
         this.urls = urls
-        removeCallbacks(loopRunnable)
         postDelayed(loopRunnable, 1000)
     }
 
